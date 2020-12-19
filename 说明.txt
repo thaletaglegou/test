@@ -10,4 +10,4 @@ password 密码
 time_sleep 每次抢购成功后等待时间，单位秒
 
 # 运行命令
-python legou.py
+双击 启动.bat文件
