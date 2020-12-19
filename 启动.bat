@@ -1,0 +1,2 @@
+python legou.py
+pause
