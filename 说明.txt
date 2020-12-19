@@ -2,6 +2,7 @@
 安装python3.6.5及以上版本
 下载地址
 http://npm.taobao.org/mirrors/python/3.6.5/python-3.6.5-amd64.exe
+安装时注意勾选最下面 add Python3.6 to PATH前面的框
 
 # 参数配置
 修改legou.py开头的几个变量来配置
