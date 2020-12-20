@@ -1,8 +1,25 @@
-from time import sleep
-
+import threading
+from time import sleep, time
 from http_util import HttpRequestUtil
 phone = '13567896827'
 password = '123456'
+phone_password_list = [
+    ('13856778775','123456'),
+    ('15956722228','123456'),
+    ('13637197994','1234567'),
+    ('13856871160','123321'),
+    ('18005678587','858722'),
+    ('17733312797','123444'),
+    ('15385253903','123456'),
+    ('15256194958','123456'),
+    ('13955815977','123456'),
+    ('17719360397','123456'),
+    ('15267653113','093113'),
+    ('15805677877','000678'),
+    ('18795016788','750608'),
+    ('19567007087','750608'),
+    ('18712236068','12345678'),
+]
 time_sleep = 60
 # web_host = "http://47.111.225.107:88"
 web_host = "https://www.legouwangjin.com"
@@ -25,7 +42,7 @@ def login(phone, password):
     }
     http_util.set_new_header(http_header)
     response = http_util.http_post_json()
-    print("login response is {}".format(response))
+    print("login phone is {},password is {},response is {}".format(phone,password,response))
     # {'status': 1, 'message': '登录成功!', 'data': {'token': 'euD4gx7qJIY9tNa96eSJyuPE74WxyiK8LXolyKcsGrYOUTgIkuUntKwHQwwZ4yavp3J1rxuhgj3tviVqEUEe85ep', 'phone': '13567896827', 'isAuth': 2, 'isSetPayPass': 0}}
     token = None
     if response and response['status'] ==1 :
@@ -67,28 +84,50 @@ def order(token,goods_id):
     return response
 
 
+class myThread(threading.Thread):
+    def __init__(self, phone, password, time_sleep):
+        threading.Thread.__init__(self)
+        self.phone = phone
+        self.password = password
+        self.time_sleep = time_sleep
+
+    def run(self):
+        token = login(self.phone, self.password)
+        goods_list_result = get_goods_cate()
+        goods_list = sorted(goods_list_result, key=lambda goods_list_result: goods_list_result['id'], reverse=True)
+        if goods_list:
+            for goods in goods_list:
+                title = goods['title']
+                start_time = goods['start_time']
+                end_time = goods['endTime']
+                this_goods_list_result = goods['list']
+                this_goods_list = sorted(this_goods_list_result,
+                                         key=lambda this_goods_list_result: this_goods_list_result['price'],
+                                         reverse=True)
+                print("title is {},start_time is {},end_time is {}".format(title, start_time, end_time))
+                if this_goods_list and len(this_goods_list) > 0:
+                    for current_goods in this_goods_list:
+                        status = current_goods['goods_status']
+                        num_stock = current_goods['number_stock']
+                        price = current_goods['price']
+                        current_title = current_goods['title']
+                        goods_id = current_goods['id']
+                        print("current_title is {},goods_id is {},price is {},status is {},num_stock is {}"
+                              .format(current_title, goods_id, price, status, num_stock))
+                        if status == 1:
+                            order_result = order(token, goods_id)
+                            print('----- 恭喜你，可以抢购，结果 order_result is {}，标题{},价格{} 等待{}秒后再抢'.format(order_result,
+                                                                                                   current_title, price,
+                                                                                                   time_sleep))
+                            sleep(self.time_sleep)
+                        else:
+                            print("+++++ 很遗憾，该商品没法抢购，状态status is {}, 状态1是可以抢购，2是已售出".format(status))
+
+
 if __name__ == '__main__':
-    token = login(phone, password)
-    goods_list = get_goods_cate()
-    if goods_list:
-        for goods in goods_list:
-            title = goods['title']
-            start_time = goods['start_time']
-            end_time = goods['endTime']
-            this_goods_list = goods['list']
-            print("title is {},start_time is {},end_time is {}".format(title,start_time,end_time))
-            if this_goods_list and len(this_goods_list) > 0:
-                for current_goods in this_goods_list:
-                    status = current_goods['goods_status']
-                    num_stock = current_goods['number_stock']
-                    price = current_goods['price']
-                    current_title = current_goods['title']
-                    goods_id = current_goods['id']
-                    print("current_title is {},goods_id is {},price is {},status is {},num_stock is {}"
-                          .format(current_title,goods_id,price,status,num_stock))
-                    if status == 1:
-                        order_result = order(token,goods_id)
-                        print('----- 恭喜你，可以抢购，结果 order_result is {}，标题{},价格{} 等待{}秒后再抢'.format(order_result,current_title,price,time_sleep))
-                        sleep(time_sleep)
-                    else:
-                        print("+++++ 很遗憾，该商品没法抢购，状态status is {}, 状态1是可以抢购，2是已售出".format(status))
+    start_time = time()
+    for data in phone_password_list:
+        my_thread = myThread(data[0],data[1],time_sleep)
+        my_thread.start()
+        my_thread.join()
+    print("\n\n\n\n**********执行结束*********，一共耗时{}秒".format(time()-start_time))
